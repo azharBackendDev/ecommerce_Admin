@@ -1,4 +1,5 @@
-import {Sequelize,DataTypes} from 'sequelize';
+
+import { Sequelize, DataTypes } from 'sequelize';
 
 const db = new Sequelize({
     host:'localhost',
@@ -15,19 +16,14 @@ const db = new Sequelize({
          db.authenticate().then(()=>{
         console.log("Database conencted Connected");        
     })
-
     await db.sync({alter:true})
-    
-    
-
-
-   } catch (error) {
-
+   } 
+   catch (error) {
     console.error('❌ Unable to connect to the database:', error);
-    
    }
 })();
 
 
-export {db,DataTypes}
+export { db, DataTypes }
+
 

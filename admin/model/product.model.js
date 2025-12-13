@@ -1,20 +1,43 @@
-import { db,DataTypes } from "../config/db.js";
+import { db, DataTypes } from "../config/db.js";
 
 export const Products = db.define('Products',{
-     title:{type:DataTypes.STRING,allowNull:false},
 
-     description:{type:DataTypes.STRING,allowNull:false},
+     title:{
+          type:DataTypes.STRING,
+          allowNull:false
+     },
 
-     price:{type:DataTypes.FLOAT,allowNull:false},
+     description:{    
+          type: DataTypes.STRING,  
+          allowNull:false    
+     },
 
-     selling_price:{type:DataTypes.FLOAT,allowNull:false},
+     price:{ 
+          type: DataTypes.FLOAT,
+          allowNull:false
+     },
 
-     category:{type:DataTypes.STRING},
+     selling_price:{ 
+          type:DataTypes.FLOAT,
+          allowNull:false
+     },
 
-     sub_category:{type:DataTypes.STRING},
+     category:{ 
+          type:DataTypes.STRING
+     },
 
-     brand:{type:DataTypes.STRING,allowNull:true},
+     sub_category:{ 
+          type:DataTypes.STRING
+     },
+
+     brand:{
+          type:DataTypes.STRING,
+          allowNull:true
+     },
      
-     sku:{type:DataTypes.STRING,allowNull:true}
+     sku:{
+          type:DataTypes.STRING,
+          allowNull:true
+     }
 
 });
