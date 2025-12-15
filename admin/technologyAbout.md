@@ -5,3 +5,5 @@ About morgan why used morgan :- generates logs that capture key details of each 
 SLUGIFY :
 Backend mein "slugify" ka upyog mukhya roop se URLs ko SEO-friendly, readable, aur unique banane ke liye hota hai. Jab aap koi title ya string input karte hain, to slugify usse ek saaf, URL-compatible format mein badal deta hai
 
+
+
