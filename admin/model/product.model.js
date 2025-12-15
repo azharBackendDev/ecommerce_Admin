@@ -1,4 +1,4 @@
-import { db, DataTypes } from "../config/db.js";
+import { db, DataTypes } from "../config/mysql.js";
 
 export const Products = db.define('Products',{
 
@@ -17,27 +17,27 @@ export const Products = db.define('Products',{
           allowNull:false
      },
 
-     selling_price:{ 
-          type:DataTypes.FLOAT,
-          allowNull:false
-     },
+     // selling_price:{ 
+     //      type:DataTypes.FLOAT,
+     //      allowNull:false
+     // },
 
-     category:{ 
-          type:DataTypes.STRING
-     },
+     // category:{ 
+     //      type:DataTypes.STRING
+     // },
 
-     sub_category:{ 
-          type:DataTypes.STRING
-     },
+     // sub_category:{ 
+     //      type:DataTypes.STRING
+     // },
 
-     brand:{
-          type:DataTypes.STRING,
-          allowNull:true
-     },
+     // brand:{
+     //      type:DataTypes.STRING,
+     //      allowNull:true
+     // },
      
-     sku:{
-          type:DataTypes.STRING,
-          allowNull:true
-     }
+     // sku:{
+     //      type:DataTypes.STRING,
+     //      allowNull:true
+     // }
 
 });
