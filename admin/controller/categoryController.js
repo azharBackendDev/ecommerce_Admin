@@ -5,10 +5,14 @@ import {Category}  from "../model/category.model.js";
  */
 export async function listCategories(req, res) {
   try {
+    // console.log(JSON.parse(req.query.parent));
+    
     const q = {};
     // optional: support ?parent=... to list subcategories
     if (req.query.parent) q.parent = req.query.parent;
-    const cats = await find(q).sort({ name: 1 }).lean();
+    
+
+    const cats = await Category.find(q).sort({ name: 1 }).lean();
     return res.json(cats);
   } catch (err) {
     console.error(err);
@@ -62,7 +66,7 @@ export async function updateCategory(req, res) {
     const allowed = ["name", "slug", "parent", "metadata"];
     for (const k of allowed) if (req.body[k] !== undefined) updates[k] = req.body[k];
 
-    const cat = await findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true }).lean();
+    const cat = await Category.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true }).lean();
     if (!cat) return res.status(404).json({ error: "Category not found" });
     return res.json(cat);
   } catch (err) {
@@ -80,7 +84,7 @@ export async function replaceAttributeSchema(req, res) {
     const { attributeSchema } = req.body;
     if (!Array.isArray(attributeSchema)) return res.status(400).json({ error: "attributeSchema must be an array" });
 
-    const cat = await findById(req.params.id);
+    const cat = await Category.findById(req.params.id);
     if (!cat) return res.status(404).json({ error: "Category not found" });
 
     cat.attributeSchema = attributeSchema;
