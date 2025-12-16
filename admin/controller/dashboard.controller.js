@@ -1,4 +1,4 @@
-
+import Product from "../model/product.model.js";
 
 const addCatagory = async (req, res) => {
   const { name } = req.body;
@@ -16,142 +16,20 @@ const addCatagory = async (req, res) => {
 
 // controller
 const uploadProduct = async (req, res) => {
-  const transaction = await connection.transaction();
-  try {
-    const files = req.files || [];
-    const {
-      name,
-      title,
-      price,
-      quantity,
-      sku,
-      description,
-      catagory,
-      specification,
-      selling_price,
-      selling_price_link,
-    } = req.body;
-
-    // parse specs (same as before)
-    let specsArr = [];
-    if (specification) {
-      const parsed = JSON.parse(specification);
-      specsArr = Object.entries(parsed).map(([key, value]) => ({ key, value }));
-    }
-
-    // Validate files count
-    if (!files.length)
-      return res
-        .status(400)
-        .json({ message: "At least one image is required." });
-    if (files.length > 5)
-      return res.status(400).json({ message: "Maximum 5 images allowed." });
-
-    // Find or create category
-    // console.log(`🔵 Looking for category: "${catagory}"`);
-    let result = await Catagories.findOne({
-      where: { name: catagory },
+    try {
+    const { name, slug, description, price, brand, category, images, stock, attributes, variants, tags } = req.body;
+    const product = new Product({
+      name, slug, description, price, brand, category, images, stock,
+      attributes: attributes || {},  // { screenSize: 6.5, color: "Black" }
+      variants: variants || [],
+      tags: tags || []
     });
+    await product.save();  // Pre-save validation chalegi!
+    return res.status(201).json(product);
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
 
-    if (!result) {
-      // Category doesn't exist, create it
-      // console.log(`⚠️ Category "${catagory}" not found, creating it...`);
-      return res
-        .status(404)
-        .json({ status: false, Message: "Category not found" });
-      // try {
-      //   result = await Catagories.create({
-      //     name: catagory,
-      //   }, { transaction });
-      //   console.log(`✅ Created new category: "${catagory}" with id: ${result.id}`);
-      // } catch (createError) {
-      //   console.error('❌ Error creating category:', createError);
-      //   await transaction.rollback();
-      //   return res.status(500).json({ message: "Failed to create category", error: createError.message });
-      // }
-    }
-    const catagory_id = result.id;
-
-    // Upload each file to Supabase and collect public URLs
-    const uploadedImageUrls = [];
-    for (const file of files) {
-      const filePath = `product-images/${uuidv4()}-${file.originalname}`;
-      const { data, error } = await supabase.storage
-        .from("products")
-        .upload(filePath, file.buffer, { contentType: file.mimetype });
-
-      if (error)
-        throw new Error(
-          "Supabase upload failed: " + (error.message || JSON.stringify(error))
-        );
-
-      const { data: publicUrlData } = supabase.storage
-        .from("products")
-        .getPublicUrl(data.path);
-
-      uploadedImageUrls.push(publicUrlData.publicUrl);
-    }
-
-    // Create product (ensure product_id matches your model column name)
-    // NOTE: use the actual primary key column name your Products model expects.
-    // const productId = uuidv4();
-
-    // let imageurl = {...uploadedImageUrls}
-
-    let imageUrl = { ...uploadedImageUrls };
-
-    const newProduct = await Products.create(
-      {
-        title,
-        name,
-        price: Number(price),
-        product_image: imageUrl, //all images url in json form
-        description,
-        selling_price: Number(selling_price),
-        catagory_id: catagory_id,
-        quantity: quantity,
-        sku: sku,
-        selling_price_link: selling_price_link,
-      },
-      { transaction }
-    );
-
-    const productId = newProduct.product_id;
-    if (specsArr.length > 0) {
-      const specsWithProductId = specsArr.map((s) => ({
-        ...s,
-        product_id: productId,
-      }));
-      await ProductSpecification.bulkCreate(specsWithProductId, {
-        transaction,
-      });
-    }
-
-    // Insert ProductImages rows
-    // const imageRows = uploadedImageUrls.map((url) => ({
-    //   id: uuidv4(),
-    //   product_id: productId,
-    //   image_url: url,
-    // }));
-    // await ProductImages.bulkCreate(imageRows, { transaction });
-
-    await transaction.commit();
-
-    res.status(200).json({
-      message: "Product uploaded successfully!",
-      product: newProduct,
-      images: uploadedImageUrls,
-    });
-  } catch (error) {
-    console.error("Server error:", error);
-    if (transaction) await transaction.rollback();
-    res
-      .status(500)
-      .json({
-        message: "Something went wrong on the server.",
-        error: error.message,
-      });
-  }
 };
 
 const getOrders = async (req, res) => {

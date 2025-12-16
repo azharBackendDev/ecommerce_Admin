@@ -57,13 +57,13 @@ const CategorySchema = new Schema(
 );
 
 // indexes for queries
-CategorySchema.index({ parent: 1 });
-CategorySchema.index({ slug: 1 });
+CategorySchema.index({ parent: true });
+CategorySchema.index({ slug: true });
 
 // auto-generate slug if not provided
-CategorySchema.pre("validate", function (next) {
+CategorySchema.pre("validate", function () {
   if (!this.slug && this.name) this.slug = slugify(this.name);
-  next();
+//  next()
 });
 
 /**

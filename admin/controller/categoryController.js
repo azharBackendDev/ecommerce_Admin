@@ -21,13 +21,13 @@ export async function listCategories(req, res) {
  */
 export async function getCategory(req, res) {
   try {
-    const cat = await findById(req.params.id).lean();
+    const cat = await Category.findById(req.params.id).lean();
     if (!cat) return res.status(404).json({ error: "Category not found" });
 
     // prefer using merged schema if helper exists (handles parent inheritance)
     let attributeSchema = cat.attributeSchema || [];
-    if (typeof getMergedAttributeSchema === "function") {
-      attributeSchema = await getMergedAttributeSchema(cat._id);
+    if (typeof Category.getMergedAttributeSchema === "function") {
+      attributeSchema = await Category.getMergedAttributeSchema(cat._id);
     }
 
     return res.json({ ...cat, attributeSchema });
@@ -101,7 +101,8 @@ export async function addAttribute(req, res) {
     const def = req.body;
     if (!def || !def.key) return res.status(400).json({ error: "Attribute 'key' is required" });
 
-    const cat = await findById(req.params.id);
+    // const cat = await   findById(req.params.id);
+  const cat =  await Category.findById(req.params.id)
     if (!cat) return res.status(404).json({ error: "Category not found" });
 
     if ((cat.attributeSchema || []).some(a => a.key === def.key)) {

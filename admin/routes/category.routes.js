@@ -1,9 +1,11 @@
 import { Router } from "express";
+import { createCategory, addAttribute, getCategory } from "../controller/categoryController.js";
 
 const router = Router();
 
-router.get("/", (req, res) => {
-    res.json({ message: "Category routes working!" });
-});
+
+router.post("/creates", createCategory);//create a category
+router.post("/:id/attributes", addAttribute);//add attribut to category
+router.get('/:id',getCategory)
 
 export default router;

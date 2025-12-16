@@ -47,7 +47,7 @@ if (process.env.NODE_ENV !== "test") {
 
 app.use("/api/categories", categoryRoutes);
 app.use("/api/products", productRoutes);
-app.use('/api/auth/admin',adminAuthRoutes);// Admin login middleware
+app.use('/api/auth/admins',adminAuthRoutes);// Admin login middleware
 
 app.use((err, req, res, next) => {
   console.error(err);
