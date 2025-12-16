@@ -1,41 +1,9 @@
-// import { Catagories } from "../model/catagory.model.js";
-// import { Products, ProductSpecification } from "../model/product.model.js";
-// import { supabase } from "../config/supabase.config.js";
-// import { connection } from "../config/db.js";
-// import { v4 as uuidv4 } from "uuid";
-// import Orders from "../model/orders.model.js";
-// import { OrderItems } from "../model/orderItem.model.js";
-// import Addresses from "../model/addresses.model.js";
 
-// const addSubcatagory = async (req, res) => {
-//   try {
-//     const { sub_catagory, catagoryName } = req.body;
-
-//     //find catagory
-//     const catagory = await Catagories.findOne({
-//       where: { name: catagoryName },
-//     });
-
-//     //check if catagroy exists
-//     if (!catagory) {
-//       return res.status(404).json({ Message: "Catagory not found" });
-//     }
-
-//     const data = await SubCatagories.create({
-//       name: sub_catagory,
-//       catagory_id: catagory.id,
-//     });
-
-//     res.send(data);
-//   } catch (error) {
-//     console.error(error);
-//   }
-// };
 
 const addCatagory = async (req, res) => {
   const { name } = req.body;
 
-  if (!name) return res.json({ err: "no data recieve" });
+  if (!name) return res.status(400).json({ err: "no data recieve" });
 
   try {
     const result = await Catagories.create({

@@ -1,9 +1,15 @@
 import { Router } from "express";
 
+
 const router = Router();
 
-router.get("/", (req, res) => {
-    res.json({ message: "Product routes working!" });
+router.post("/", async (req, res) =>  {
+    const {title,description,price} = req.body;
+   
+
+
+    return res.send('success...')
+
 });
 
 export default router;

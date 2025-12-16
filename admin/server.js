@@ -5,6 +5,7 @@ import { app } from './app.js';
 import { connectMongoDB } from "./config/mongo.js";
 import { connectSupabase } from "./config/supabase.js";
 
+
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {

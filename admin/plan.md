@@ -7,7 +7,8 @@
 
 
 ADMIN DASHBOARD FEATURES:------>>>
-
+            (DATABASE:- mongoDB)
+            
             STEP 1: Admin can list there product with full detail like (flipkart,amazon)
             STEP 2: Admin can update full product
             STEP 3: Admin can CRUD product reviews
