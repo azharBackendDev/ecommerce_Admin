@@ -66,26 +66,20 @@ CategorySchema.pre("validate", function (next) {
   next();
 });
 
-/**
- * Static: getMergedAttributeSchema(categoryId)
- * Walks up parent chain and merges attributeSchema arrays.
- * Child overrides parent by key.
- * Returns array of defs (order: ancestor -> child, but child defs override).
- */
+
 CategorySchema.statics.getMergedAttributeSchema = async function (categoryId) {
   const Category = this;
   const defsByKey = new Map();
 
-  // walk up to root and collect nodes in root-first order
   const chain = [];
   let cur = await Category.findById(categoryId).lean();
+
   while (cur) {
-    chain.unshift(cur); // unshift so root is first
+    chain.unshift(cur);
     if (!cur.parent) break;
     cur = await Category.findById(cur.parent).lean();
   }
 
-  // merge: ancestor first, child overrides same key
   for (const node of chain) {
     const arr = node.attributeSchema || [];
     for (const def of arr) {
@@ -96,10 +90,7 @@ CategorySchema.statics.getMergedAttributeSchema = async function (categoryId) {
   return Array.from(defsByKey.values());
 };
 
-/**
- * Instance: getFullPath()
- * Returns array of { _id, name, slug } from root -> this
- */
+
 CategorySchema.methods.getFullPath = async function () {
   const Category = this.constructor;
   const path = [];
