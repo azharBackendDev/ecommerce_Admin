@@ -1,5 +1,5 @@
 // models/Category.js
-const mongoose = require("mongoose");
+import mongoose from"mongoose";
 const { Schema } = mongoose;
 
 /**
@@ -111,5 +111,4 @@ CategorySchema.methods.getFullPath = async function () {
   }
   return path;
 };
-
-module.exports = mongoose.model("Category", CategorySchema);
+export const Category = mongoose.model("Category", CategorySchema);

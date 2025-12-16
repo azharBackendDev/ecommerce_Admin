@@ -1,15 +1,10 @@
 import { Router } from "express";
+import {createCategory} from "../controller/categoryController.js"
 
 
 const router = Router();
 
-router.post("/", async (req, res) =>  {
-    const {title,description,price} = req.body;
-   
+router.post("/",createCategory )
 
-
-    return res.send('success...')
-
-});
 
 export default router;

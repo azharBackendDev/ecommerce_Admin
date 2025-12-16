@@ -1,16 +1,27 @@
 // models/Product.js
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 const { Schema } = mongoose;
-import { Category } from './category'
+import { Category } from "./category";
 
 const ProductSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
-    slug: { type: String, required: true, unique: true, lowercase: true, index: true },
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      index: true,
+    },
     description: { type: String, required: true },
     price: { type: Number, required: true, min: 0, index: true },
     brand: { type: String, required: true, index: true },
-    category: { type: Schema.Types.ObjectId, ref: "Category", required: true, index: true },
+    category: {
+      type: Schema.Types.ObjectId,
+      ref: "Category",
+      required: true,
+      index: true,
+    },
     images: [{ type: String, required: true }],
     stock: { type: Number, default: 0, min: 0 },
     // attributes stored as Map (key -> mixed)
@@ -51,8 +62,12 @@ function isTypeValid(def, val) {
   const t = def.type || "string";
   if (t === "string") return typeof val === "string";
   if (t === "number") return !isNaN(Number(val));
-  if (t === "boolean") return typeof val === "boolean" || val === "true" || val === "false";
-  if (t === "enum") return def.options && def.options.length ? def.options.includes(String(val)) : true;
+  if (t === "boolean")
+    return typeof val === "boolean" || val === "true" || val === "false";
+  if (t === "enum")
+    return def.options && def.options.length
+      ? def.options.includes(String(val))
+      : true;
   if (t === "array") return Array.isArray(val);
   if (t === "object") return typeof val === "object" && !Array.isArray(val);
   if (t === "date") return !isNaN(new Date(val).getTime());
@@ -65,7 +80,11 @@ function isTypeValid(def, val) {
 ProductSchema.pre("save", async function (next) {
   try {
     // only validate when creating or when category/attributes changed
-    if (!this.isNew && !this.isModified("category") && !this.isModified("attributes")) {
+    if (
+      !this.isNew &&
+      !this.isModified("category") &&
+      !this.isModified("attributes")
+    ) {
       return next();
     }
 
@@ -73,9 +92,10 @@ ProductSchema.pre("save", async function (next) {
     if (!cat) return next(new Error("Invalid category"));
 
     // get merged defs (handles ancestor inheritance if used)
-    const defs = (typeof Category.getMergedAttributeSchema === "function")
-      ? await Category.getMergedAttributeSchema(this.category)
-      : (cat.attributeSchema || []);
+    const defs =
+      typeof Category.getMergedAttributeSchema === "function"
+        ? await Category.getMergedAttributeSchema(this.category)
+        : cat.attributeSchema || [];
 
     const attrs = normalizeAttributes(this.attributes);
 
@@ -94,12 +114,20 @@ ProductSchema.pre("save", async function (next) {
       // type/options check (if value present)
       if (val !== undefined && val !== null && val !== "") {
         if (!isTypeValid(def, val)) {
-          return next(new Error(`Invalid value for ${key}: expected ${def.type}`));
+          return next(
+            new Error(`Invalid value for ${key}: expected ${def.type}`)
+          );
         }
         // if enum/options present, verify membership
-        if ((def.type === "enum" || (def.options && def.options.length)) && def.options && def.options.length) {
+        if (
+          (def.type === "enum" || (def.options && def.options.length)) &&
+          def.options &&
+          def.options.length
+        ) {
           if (!def.options.includes(String(val))) {
-            return next(new Error(`${key} must be one of: ${def.options.join(", ")}`));
+            return next(
+              new Error(`${key} must be one of: ${def.options.join(", ")}`)
+            );
           }
         }
       }
@@ -111,4 +139,4 @@ ProductSchema.pre("save", async function (next) {
   }
 });
 
-module.exports = mongoose.model("Product", ProductSchema);
+export default Products = mongoose.model("Product", ProductSchema);
