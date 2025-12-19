@@ -1,7 +1,7 @@
 // models/Product.js
 import mongoose from "mongoose";
 const { Schema } = mongoose;
-import { Category } from "./category";
+import { Category } from "./category.model.js";
 
 const ProductSchema = new Schema(
   {
@@ -35,7 +35,7 @@ const ProductSchema = new Schema(
       },
     ],
     tags: [String],
-    isActive: { type: Boolean, default: true },
+    isActive: { type: String, default: true },
   },
   { timestamps: true }
 );
@@ -77,66 +77,68 @@ function isTypeValid(def, val) {
 /**
  * Pre-save: validate product.attributes against category.attributeSchema (merged)
  */
-ProductSchema.pre("save", async function (next) {
-  try {
-    // only validate when creating or when category/attributes changed
-    if (
-      !this.isNew &&
-      !this.isModified("category") &&
-      !this.isModified("attributes")
-    ) {
-      return next();
+ProductSchema.pre("save", async function () {
+  // only validate when creating or when category/attributes changed
+  if (
+    !this.isNew &&
+    !this.isModified("category") &&
+    !this.isModified("attributes")
+  ) {
+    return;
+  }
+
+  const cat = await Category.findById(this.category).lean();
+  if (!cat) {
+    const err = new Error("Invalid category");
+    err.status = 400;
+    throw err;
+  }
+
+  const defs =
+    typeof Category.getMergedAttributeSchema === "function"
+      ? await Category.getMergedAttributeSchema(this.category)
+      : cat.attributeSchema || [];
+
+  const attrs = normalizeAttributes(this.attributes);
+
+  for (const def of defs) {
+    const key = def.key;
+    const val = attrs[key];
+
+    // required check
+    if (def.required && (val === undefined || val === null || val === "")) {
+      const err = new Error(`Missing required attribute: ${key}`);
+      err.status = 400;
+      throw err;
     }
 
-    const cat = await Category.findById(this.category).lean();
-    if (!cat) return next(new Error("Invalid category"));
-
-    // get merged defs (handles ancestor inheritance if used)
-    const defs =
-      typeof Category.getMergedAttributeSchema === "function"
-        ? await Category.getMergedAttributeSchema(this.category)
-        : cat.attributeSchema || [];
-
-    const attrs = normalizeAttributes(this.attributes);
-
-    // Validate each def
-    for (const def of defs) {
-      const key = def.key;
-      const val = attrs[key];
-
-      // required check
-      if (def.required && (val === undefined || val === null || val === "")) {
-        const err = new Error(`Missing required attribute: ${key}`);
+    // type check
+    if (val !== undefined && val !== null && val !== "") {
+      if (!isTypeValid(def, val)) {
+        const err = new Error(
+          `Invalid value for ${key}: expected ${def.type}`
+        );
         err.status = 400;
-        return next(err);
+        throw err;
       }
 
-      // type/options check (if value present)
-      if (val !== undefined && val !== null && val !== "") {
-        if (!isTypeValid(def, val)) {
-          return next(
-            new Error(`Invalid value for ${key}: expected ${def.type}`)
-          );
-        }
-        // if enum/options present, verify membership
-        if (
-          (def.type === "enum" || (def.options && def.options.length)) &&
-          def.options &&
-          def.options.length
-        ) {
-          if (!def.options.includes(String(val))) {
-            return next(
-              new Error(`${key} must be one of: ${def.options.join(", ")}`)
-            );
-          }
-        }
+      // enum check
+      if (
+        (def.type === "enum" || def.options?.length) &&
+        def.options?.length &&
+        !def.options.includes(String(val))
+      ) {
+        const err = new Error(
+          `${key} must be one of: ${def.options.join(", ")}`
+        );
+        err.status = 400;
+        throw err;
       }
     }
-
-    return next();
-  } catch (err) {
-    return next(err);
   }
 });
 
-export default Products = mongoose.model("Product", ProductSchema);
+
+const Product = mongoose.model("Product", ProductSchema);
+
+export default Product;

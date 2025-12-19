@@ -1,5 +1,5 @@
-import dotenv from "dotenv";
-dotenv.config();
+import "dotenv/config";
+
 import express, { urlencoded } from "express";
 import morgan from "morgan";
 import categoryRoutes from "./routes/category.routes.js";
@@ -11,7 +11,6 @@ import cors from "cors";
 import typeDefs from "./schema.js";
 import resolvers from "./resolver.js";
 import adminAuthRoutes from './routes/auth.routes.js'
-
 
 
 
@@ -46,8 +45,17 @@ if (process.env.NODE_ENV !== "test") {
 }
 
 app.use("/api/categories", categoryRoutes);
-app.use("/api/products", productRoutes);
 app.use('/api/auth/admins',adminAuthRoutes);// Admin login middleware
+
+
+
+
+// Add product delete routes etc.....
+app.use("/api/products", productRoutes);
+
+
+
+
 
 app.use((err, req, res, next) => {
   console.error(err);
