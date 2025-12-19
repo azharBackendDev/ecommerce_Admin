@@ -11,6 +11,8 @@ import cors from "cors";
 import typeDefs from "./schema.js";
 import resolvers from "./resolver.js";
 import adminAuthRoutes from './routes/auth.routes.js'
+import cookieParser from "cookie-parser";
+
 
 
 
@@ -30,6 +32,7 @@ export const app = express();
 app.use(express.json());
 app.use(urlencoded({ extended: true }));
 app.use(express.json({ limit: "10mb" }));
+app.use(cookieParser())
 
 //setup cors
 app.use(
