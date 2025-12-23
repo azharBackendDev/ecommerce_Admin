@@ -1,80 +1,108 @@
-// Helper function to validate email
-const isValidEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-};
+import { Users } from "../model/user.model.js";
+import { generateAccessToken } from "../services/jwt.services.js";
+import { sendMail } from "../services/mail.services.js";
+import { otpStore } from "../services/storeOtp.services.js";
+const isprod = process.env.IS_PRODUCTION;
 
-// Helper function to validate phone
-const isValidPhone = (phone) => {
-    const phoneRegex = /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/;
-    return phoneRegex.test(phone);
-};
+ function generateOTP(){
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
-// Helper function to identify if input is email or phone
-const identifyInputType = (input) => {
-    if (isValidEmail(input)) {
-        return 'email';
-    } else if (isValidPhone(input)) {
-        return 'phone';
-    }
-    return 'invalid';
-};
 
 export const adminLogin = async (req, res) => {
-    try {
-        const { credential, password } = req.body;
-        
-        // Validate inputs
-        if (!credential || !password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email/Phone and password are required'
-            });
-        }
-        
-        // Identify whether user entered email or phone
-        let inputType = identifyInputType(credential);
-        
-        if (inputType === 'invalid') {
-            return res.status(400).json({
-                success: false,
-                message: 'Please enter a valid email or phone number'
-            });
-        }
-        
-        // Validate password length
-        if (password.length < 6) {
-            return res.status(400).json({
-                success: false,
-                message: 'Password must be at least 6 characters'
-            });
-        }
-        
-        // Log the detected type
-        console.log(`User entered ${inputType}: ${credential}`);
-        
-        // Query logic based on input type
-        let query = {};
-        if (inputType === 'email') {
-            query = { email: credential };
-        } else if (inputType === 'phone') {
-            query = { phone: credential };
-        }
-        
-        // Example response showing what was detected
-        res.status(200).json({
-            success: true,
-            message: 'Login initiated',
-            loginType: inputType,
-            identifier: credential,
-            // Add your database query and authentication logic here
-        });
-        
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error during login'
-        });
+  try {
+    const { credential, password } = req.body;
+
+    if (!credential || !password) {
+      return res
+        .status(400)
+        .json({ message: "Credential and password required" });
     }
-}
+
+    let user = await Users.findByCredential(credential);
+
+    
+    if (user) {
+      const ok = await user.comparePassword(password);
+      if (!ok) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+    }
+
+    
+    if (!user) {
+      const normalized = {};
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(credential)) {
+        normalized.email = credential.toLowerCase();
+      } else {
+        normalized.phone = credential.replace(/\D/g, "");
+      }
+
+      user = await Users.create({
+        ...normalized,
+        password,
+      });
+    }
+
+  
+    const otp = generateOTP();//genereate otp
+    otpStore.set(credential, otp);//save otp
+
+    await sendMail(credential, otp);//send mail
+
+    return res.status(200).json({
+      message: "OTP sent successfully",
+      to: credential,
+      isNewUser: !user.lastLoginAt, 
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+export const verifyLoginOTP = async (req, res) => {
+  try {
+    const { credential, otp } = req.body;
+
+    if (!credential || !otp) {
+      return res.status(400).json({ message: "credential and OTP required" });
+    }
+
+    const valid = otpStore.verify(credential, otp);
+    if (!valid) {
+      return res.status(401).json({ message: "Invalid or expired OTP" });
+    }
+
+    const user = await Users.findByCredential(credential)
+
+    //generate access token and send cookie
+    const token = await generateAccessToken(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET
+    );
+
+    res.cookie("AccessToken", token, {
+      httpOnly: true,
+      secure: isprod,
+      sameSite: isprod ? "none" : "lax",
+      maxAge: 1000 * 60 * 15,
+    });
+
+    user.lastLoginAt = new Date();
+    user.isEmailVerified=true
+    await user.save();
+
+    return res.status(200).json({
+      message: "Login successful",
+      user: user.toJSON(),
+    });
+
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+
+

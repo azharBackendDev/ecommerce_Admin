@@ -11,6 +11,10 @@ import cors from "cors";
 import typeDefs from "./schema.js";
 import resolvers from "./resolver.js";
 import adminAuthRoutes from './routes/auth.routes.js'
+import cookieParser from "cookie-parser";
+import { presignBatch } from "./utils/presignedUrl.js";
+import { completeMultipart } from "./controller/multipart.controller.js";
+
 
 
 
@@ -29,6 +33,7 @@ export const app = express();
 app.use(express.json());
 app.use(urlencoded({ extended: true }));
 app.use(express.json({ limit: "10mb" }));
+app.use(cookieParser())
 
 //setup cors
 app.use(
@@ -50,7 +55,9 @@ app.use('/api/auth/admins',adminAuthRoutes);// Admin login middleware
 
 
 
+// ===================================================
 // Add product delete routes etc.....
+// ===================================================
 app.use("/api/products", productRoutes);
 
 

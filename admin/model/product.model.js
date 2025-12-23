@@ -5,7 +5,11 @@ import { Category } from "./category.model.js";
 
 const ProductSchema = new Schema(
   {
-    name: { type: String, required: true, trim: true },
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
     slug: {
       type: String,
       required: true,
@@ -13,17 +17,38 @@ const ProductSchema = new Schema(
       lowercase: true,
       index: true,
     },
-    description: { type: String, required: true },
-    price: { type: Number, required: true, min: 0, index: true },
-    brand: { type: String, required: true, index: true },
+    description: {
+      type: String,
+      required: true
+    },
+    price: {
+      type: Number,
+      required: true,
+      min: 0,
+      index: true
+    },
+    brand: {
+      type: String,
+      required: true,
+      index: true
+    },
     category: {
       type: Schema.Types.ObjectId,
       ref: "Category",
       required: true,
       index: true,
     },
-    images: [{ type: String, required: true }],
+    images: {
+      type: [{ type: String }],
+      validate: {
+        validator: (v) => Array.isArray(v) && v.length > 0,
+        message: 'At least one image or video is required'
+      }
+    },
+    s3Keys: [{ type: String }],
+
     stock: { type: Number, default: 0, min: 0 },
+    
     // attributes stored as Map (key -> mixed)
     attributes: { type: Map, of: Schema.Types.Mixed, default: {} },
     variants: [
@@ -35,7 +60,7 @@ const ProductSchema = new Schema(
       },
     ],
     tags: [String],
-    isActive: { type: String, default: true },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
