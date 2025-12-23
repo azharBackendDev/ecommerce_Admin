@@ -46,7 +46,7 @@ export const adminLogin = async (req, res) => {
 
   
     const otp = generateOTP();//genereate otp
-    otpStore.set(credential, otp);//save otp
+    otpStore.set(credential.toLowerCase(), otp);//save otp
 
     await sendMail(credential, otp);//send mail
 
@@ -91,7 +91,9 @@ export const verifyLoginOTP = async (req, res) => {
     });
 
     user.lastLoginAt = new Date();
-    user.isEmailVerified=true
+    if (user.email === credential) user.isEmailVerified = true;
+    if (user.phone === credential) user.isPhoneVerified = true;
+
     await user.save();
 
     return res.status(200).json({
@@ -104,5 +106,60 @@ export const verifyLoginOTP = async (req, res) => {
   }
 };
 
+export const ForgetPassword = async (req, res) => {
+  const { email } = req.body;
+  console.log(email)
+  
+
+ const isUser = await Users.findOne({ email });
+
+
+  if(!isUser) return res.status(400).json({Message:"User not found"})
+
+    // Generate OTP
+    const otp = generateOTP();
+   otpStore.set(email,otp) ; // Store OTP temporarily
+
+    try {
+      await sendMail(email,otp); // send otp to gmail
+      return res.status(200).json({ message: 'OTP sent to your email'});
+    } catch (error) {
+      console.error('Error sending SMS:', error);
+      return res.status(500).json({ message: 'Failed to send OTP ' });
+    }
+};
+
+
+
+//Reset Password
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const valid = otpStore.verify(email, otp);
+    if (!valid) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    const user = await Users.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    await Users.findOneAndUpdate(
+      { email },
+      { password: newPassword }
+    );
+
+    return res.status(200).json({ message: "Password reset successful" });
+
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+};
 
 
