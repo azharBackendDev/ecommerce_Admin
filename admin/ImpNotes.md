@@ -1,0 +1,1 @@
+Need to chages create category add one more fields in models images: because category ki profile par kosna emage lgana hai is liye 

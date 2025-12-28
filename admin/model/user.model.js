@@ -1,200 +1,56 @@
-
 import mongoose from "mongoose";
-import bcrypt from "bcrypt";
+const { Schema } = mongoose;
 
-const SALT_ROUNDS = 10;
 
-const UserSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: false,
-    trim: true,
-  },
+const AddressSchema = new Schema({
+  _id: { type: Schema.Types.ObjectId, auto: true },
+  fullName: String,
+  phone: String,
+  addressLine1: String,
+  addressLine2: String,
+  city: String,
+  state: String,
+  pincode: String,
+  country: String,
+  isDefault: { type: Boolean, default: false }
+}, { _id: false }); // Embedded for tight coupling – no need for separate model unless independent queries
 
-  // optional but unique (sparse index)
-  email: {
-    type: String,
-    unique: true,
-    sparse: true,
-    trim: true,
-    lowercase: true,
-  },
+const SellerInfoSchema = new Schema({
+  shopName: String,
+  gstNumber: String,
+  panNumber: String,
+  isVerifiedSeller: { type: Boolean, default: false },
+  rating: { type: Number, default: 0 }
+}, { _id: false }); // Embedded – seller info is user-specific, not reusable across users
 
-  phone: {
-    type: String,
-    unique: true,
-    sparse: true,
-    trim: true,
-  },
+const UserSchema = new Schema({
+  role: { type: String, enum: ["customer", "seller", "admin"], default: "customer", index: true },
 
-  password: {
-    type: String,
-    required: true,
-    trim: true,
-    minlength: 6,
-  },
+  fullName: String,
+  email: { type: String, index: true, sparse: true, unique: true }, // sparse for optional unique
+  phone: { type: String, index: true, sparse: true, unique: true }, // same for phone
+  whatsappnumber: String,
+  profileImage: String,
 
-  role: {
-    type: String,
-    enum: ["admin", "superAdmin"],
-    default: "admin",
-    lowercase: true,
-  },
+  // Verification status (updated after OTP verify)
+  verified: { type: Boolean, default: false },
+  verifiedAt: Date, // timestamp when verified
 
-  isEmailVerified: {
-    type: Boolean,
-    default: false,
-  },
+  // Recovery fields (updated after add recovery flow)
+  recoveryEmail: { type: String, sparse: true, unique: true },
+  recoveryPhone: { type: String, sparse: true, unique: true },
+  recoveryVerifiedAt: Date,
 
-  isPhoneVerified:{
-    type:Boolean,
-    default:false
-  },
-
-  // account lock / brute force protection
-  failedLoginAttempts: {
-    type: Number,
-    default: 0,
-  },
-  lockUntil: {
-    type: Date,
-    default: null,
-  },
-
-  lastLoginAt: {
-    type: Date,
-  },
-
-  isActive: {
-    type: Boolean,
-    default: true,
-  },
-
-  // optional: store refresh tokens or token ids (be careful with size)
-  refreshTokens: {
-    type: [String],
-    default: [],
-  },
-
-  // for password reset
-  resetPasswordToken: String,
-  resetPasswordExpires: Date
-
+  status: { type: String, enum: ["active", "blocked", "deleted"], default: "active" },
+  addresses: [AddressSchema],
+  sellerInfo: SellerInfoSchema
 }, { timestamps: true });
 
+// Compound index for login lookups
+UserSchema.index({ email: 1 });
+UserSchema.index({ phone: 1 });
 
+// No pre-save for OTP – handled in separate Otp model
 
-
-/*
- Ensure at least one identifier exists (email or phone).
- This runs before validation and prevents saving invalid doc.
-*/
-UserSchema.pre("validate", function () {
-  if (!this.email && !this.phone) {
-    throw new Error("Either email or phone is required");
-  }
- 
-});
-
-
-
-/*
- Hash password on save if modified.
-*/
-UserSchema.pre("save", async function () {
-  
-    if (!this.isModified("password")) return ;
-    const salt = await bcrypt.genSalt(SALT_ROUNDS);
-    this.password = await bcrypt.hash(this.password, salt);
-    return ;
-
-});
-
-/*
- If you use findOneAndUpdate to change password, pre('findOneAndUpdate') hook:
- (only needed if you update password via findOneAndUpdate)
-*/
-UserSchema.pre("findOneAndUpdate", async function () {
-  const update = this.getUpdate();
-  if (update && update.password) {
-    try {
-      const salt = await bcrypt.genSalt(SALT_ROUNDS);
-      update.password = await bcrypt.hash(update.password, salt);
-      this.setUpdate(update);
-    } catch (err) {
-      return err;
-    }
-  }
-});
-
-/*
- Instance method to compare password
-*/
-UserSchema.methods.comparePassword = async function (plainPassword) {
-  
-  //check if user profile is Locked?
-  if(this.lockUntil && this.lockUntil > Date.now()) throw new Error('Your Account is Locked for 1 hour');
-
-    //compare password
-  const isMatch = await bcrypt.compare(plainPassword, this.password);
-  if(isMatch){
-    //reset 
-      this.failedLoginAttempts = 0;
-    this.lockUntil = null;
-    this.lastLoginAt = new Date();
-    await this.save();
-
-    return true;
-  }
-    // 4️⃣ Password incorrect
-  this.failedLoginAttempts += 1;
-
-  // 5️⃣ Lock account if max attempts reached
-  if (this.failedLoginAttempts >= 5) {
-    this.lockUntil = new Date(Date.now() + (1000 * 60 * 60));
-  }
-
-  await this.save();
-
-  return false;
-
-};
-
-/*
- Instance helper to sanitize output (remove password, tokens)
-*/
-UserSchema.methods.toJSON = function () {
-  const obj = this.toObject();
-  delete obj.password;
-  delete obj.__v;
-  delete obj.resetPasswordToken;
-  delete obj.resetPasswordExpires;
-  // optionally delete refreshTokens if you don't want to return them
-  delete obj.refreshTokens;
-  return obj;
-};
-
-/*
- Static helper: find by credential (email or phone)
-*/
-UserSchema.statics.findByCredential = async function (credential) {
-  // detect email/phone by simple regex
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  let query= {};
-  if (emailRegex.test(credential)) {
-    query.email = credential.toLowerCase();
-  } else {
-    // normalize phone: remove non-digit chars
-    const phone = credential.replace(/\D/g, "");
-    query.phone = phone;
-  }
-  return this.findOne(query);
-};
-
-/*
- Indexes (ensure created)
-*/
-// UserSchema.index({ email: 1 }, { unique: true, sparse: true });
-// UserSchema.index({ phone: 1 }, { unique: true, sparse: true });
-
-export const Users = mongoose.model("Users", UserSchema);
+const Users = mongoose.model("User", UserSchema);
+export default Users;

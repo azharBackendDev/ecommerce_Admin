@@ -1,4 +1,4 @@
-import { Users } from "../model/user.model.js";
+import { AdminModel } from "../model/admin.model.js";
 import { generateAccessToken } from "../services/jwt.services.js";
 import { sendMail } from "../services/mail.services.js";
 import { otpStore } from "../services/storeOtp.services.js";
@@ -19,7 +19,7 @@ export const adminLogin = async (req, res) => {
         .json({ message: "Credential and password required" });
     }
 
-    let user = await Users.findByCredential(credential);
+    let user = await AdminModel.findByCredential(credential);
 
     
     if (user) {
@@ -38,7 +38,7 @@ export const adminLogin = async (req, res) => {
         normalized.phone = credential.replace(/\D/g, "");
       }
 
-      user = await Users.create({
+      user = await AdminModel.create({
         ...normalized,
         password,
       });
@@ -75,7 +75,7 @@ export const verifyLoginOTP = async (req, res) => {
       return res.status(401).json({ message: "Invalid or expired OTP" });
     }
 
-    const user = await Users.findByCredential(credential)
+    const user = await AdminModel.findByCredential(credential)
 
     //generate access token and send cookie
     const token = await generateAccessToken(
@@ -111,7 +111,7 @@ export const ForgetPassword = async (req, res) => {
   console.log(email)
   
 
- const isUser = await Users.findOne({ email });
+ const isUser = await AdminModel.findOne({ email });
 
 
   if(!isUser) return res.status(400).json({Message:"User not found"})
@@ -145,12 +145,12 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
 
-    const user = await Users.findOne({ email });
+    const user = await AdminModel.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    await Users.findOneAndUpdate(
+    await AdminModel.findOneAndUpdate(
       { email },
       { password: newPassword }
     );

@@ -1,5 +1,4 @@
-// models/Category.js
-import mongoose from"mongoose";
+import mongoose from "mongoose";
 const { Schema } = mongoose;
 
 /**
@@ -63,7 +62,7 @@ CategorySchema.index({ slug: true });
 // auto-generate slug if not provided
 CategorySchema.pre("validate", function () {
   if (!this.slug && this.name) this.slug = slugify(this.name);
-//  next()
+  //  next()
 });
 
 /**

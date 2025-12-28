@@ -66,10 +66,10 @@ export const createProduct = async (req, res) => {
       // collect keys and public/private location handling
       // ===================================================
       for (const f of files) {
-      // ===================================================
-      // multer-s3 typically provides key (Key) and location
-      // multer-s3 sets f.key and f.location
-      // ===================================================
+        // ===================================================
+        // multer-s3 typically provides key (Key) and location
+        // multer-s3 sets f.key and f.location
+        // ===================================================
 
         if (f.key) s3Keys.push(f.key);
         if (f.location) imageUrls.push(f.location);
@@ -99,14 +99,7 @@ export const createProduct = async (req, res) => {
         }
       }
 
-      // optional: verify S3 objects exist (headObject). Good for correctness, but increases latency.
-      for (const key of s3Keys) {
-        try {
-          await s3.headObject({ Bucket: process.env.AWS_BUCKET_NAME, Key: key }).promise();
-        } catch (err) {
-          return res.status(400).json({ error: `S3 object not found for key: ${key}` });
-        }
-      }
+
     }
 
     // slug

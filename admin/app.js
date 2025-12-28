@@ -2,21 +2,19 @@ import "dotenv/config";
 
 import express, { urlencoded } from "express";
 import morgan from "morgan";
-import categoryRoutes from "./routes/category.routes.js";
-import productRoutes from "./routes/product.routes.js";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@as-integrations/express4";
 import bodyParser from "body-parser";
 import cors from "cors";
 import typeDefs from "./schema.js";
 import resolvers from "./resolver.js";
-import adminAuthRoutes from './routes/auth.routes.js'
 import cookieParser from "cookie-parser";
-import { presignBatch } from "./utils/presignedUrl.js";
-import { completeMultipart } from "./controller/multipart.controller.js";
 
 
-
+import adminAuthRoutes from './routes/auth.routes.js'
+import productRoutes from "./routes/product.routes.js";
+import categoryRoutes from "./routes/category.routes.js";
+import userRoutes from "./routes/user.routes.js"
 
 
 
@@ -61,7 +59,8 @@ app.use('/api/auth/admins',adminAuthRoutes);// Admin login middleware
 app.use("/api/products", productRoutes);
 
 
-
+// User routes 
+app.use("/api/users", userRoutes);
 
 
 app.use((err, req, res, next) => {
