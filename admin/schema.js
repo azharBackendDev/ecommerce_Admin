@@ -1,26 +1,47 @@
-// schema.js
 import { gql } from 'graphql-tag';
 
 const typeDefs = gql`
   type Query {
-    # Yeh ek simple function hai jo string return karegi
-    hello: String
-    # Yeh function Book type ki array return karegi
-    books: [Book] 
+    getAllProducts: [Product]
+    getDraftProducts: [Product]
+    }
 
-    products:[products]
+  #type define for product model
+  type Product {
+    _id: ID
+    name: String
+    slug: String
+    description: String
+    price: Float
+    brand: String
+    category: ID
+    images: [String]
+    s3Keys: [String]
+    stock: Int
+    
+    attributes:Attribute
+    variants: [Variant]
+    tags: [String]
+    isActive: Boolean
+    createdAt: String
+    updatedAt: String
   }
 
-  type products{
-    title:String
-    description:String
-    price:Int
-  
-  }
 
-  type Book {
-    title: String
-    author: String
+#sub-part or Product
+  type Attribute {
+    color:String
+    ram:Int
+    storage:String
+  }
+    
+  #sub-part of Product
+  type Variant {
+    _id: ID
+    size: String
+    color: String
+    stock: Int
+    priceAdjustment: Float
   }
 `;
 
