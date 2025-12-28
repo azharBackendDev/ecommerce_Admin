@@ -1,7 +1,9 @@
 // src/utils/presignedUrl.js
 import { s3 } from "../config/s3.js";
 import { v4 as uuidv4 } from "uuid";
+import { PutObjectCommand, CreateMultipartUploadCommand, UploadPartCommand } from "@aws-sdk/client-s3";
 
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 
 // ===================================================
@@ -50,35 +52,49 @@ export const presignBatch = async (req, res) => {
       const forceMultipart = /^video\//.test(contentType) || size >= MULTIPART_THRESHOLD;
 
       if (!forceMultipart) {
-        // simple PUT presign
-        const params = {
+        const command = new PutObjectCommand({
           Bucket: process.env.AWS_BUCKET_NAME,
           Key: key,
           ContentType: contentType,
-          Expires: 120, // seconds
-        };
-        const url = s3.getSignedUrl("putObject", params);
+        });
+
+        const url = await getSignedUrl(s3, command, { expiresIn: 120 });
+
         results.push({ type: "simple", key, url, contentType });
-      } else {
+      }
+
+
+      else {
+
+        // ===================================================
         // multipart: create upload, return uploadId and part URLs
-        const createParams = {
-          Bucket: process.env.AWS_BUCKET_NAME,
-          Key: key,
-          ContentType: contentType,
-        };
-        const createResp = await s3.createMultipartUpload(createParams).promise();
+        // ===================================================
+        const createResp = await s3.send(
+          new CreateMultipartUploadCommand({
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: key,
+            ContentType: contentType,
+          })
+        );
+
+        // ===================================================
+        // const createResp = await s3.createMultipartUpload(createParams).promise();
+        // ===================================================
         const uploadId = createResp.UploadId;
 
         const partCount = Math.ceil(size / PART_SIZE);
         const partUrls = [];
+
         for (let partNumber = 1; partNumber <= partCount; partNumber++) {
-          const params = {
+
+          const command = new UploadPartCommand({
             Bucket: process.env.AWS_BUCKET_NAME,
             Key: key,
             UploadId: uploadId,
             PartNumber: partNumber
-          };
-          const url = s3.getSignedUrl("uploadPart", params);
+          });
+
+          const url = await getSignedUrl(s3, command, { expiresIn: 120 });
           partUrls.push({ partNumber, url });
         }
 

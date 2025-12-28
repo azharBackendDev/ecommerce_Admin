@@ -1,4 +1,4 @@
-// models/Product.js
+// models/Product.js (Added sku field for OrderItem compatibility)
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 import { Category } from "./category.model.js";
@@ -46,21 +46,25 @@ const ProductSchema = new Schema(
       }
     },
     s3Keys: [{ type: String }],
-
-    stock: { type: Number, default: 0, min: 0 },
-    
+    sku: { type: String, unique: true, sparse: true }, // FIXED: Added SKU (optional unique for variants/base)
+    stock: { type: Number, default: 100, min: 0 },
     // attributes stored as Map (key -> mixed)
     attributes: { type: Map, of: Schema.Types.Mixed, default: {} },
     variants: [
       {
         size: String,
         color: String,
-        stock: Number,
+        // stock: Number,
         priceAdjustment: Number,
       },
     ],
     tags: [String],
     isActive: { type: Boolean, default: true },
+    likesCount: { type: Number, default: 0, index: true },
+    wishlistCount: { type: Number, default: 0, index: true },
+    addToCartCount: { type: Number, default: 0, index: true },
+    viewCount: { type: Number, default: 0, index: true },
+    purchaseCount: { type: Number, default: 0, index: true },
   },
   { timestamps: true }
 );
@@ -162,7 +166,6 @@ ProductSchema.pre("save", async function () {
     }
   }
 });
-
 
 const Product = mongoose.model("Product", ProductSchema);
 

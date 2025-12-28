@@ -1,5 +1,6 @@
 // src/controllers/multipart.controller.js
 import { s3 } from "../config/s3.js";
+import { CompleteMultipartUploadCommand } from "@aws-sdk/client-s3";
 
 // ===================================================
 /**
@@ -10,6 +11,7 @@ import { s3 } from "../config/s3.js";
  * }  
  */
 // ===================================================
+
 // src/controllers/multipart.controller.js
 
 export const completeMultipart = async (req, res) => {
@@ -21,19 +23,23 @@ export const completeMultipart = async (req, res) => {
 
     const sorted = parts.sort((a, b) => a.PartNumber - b.PartNumber);
 
-    const params = {
+    const command = new CompleteMultipartUploadCommand({
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: key,
       UploadId: uploadId,
       MultipartUpload: {
         Parts: sorted
       }
-    };
+    });
 
-    const resp = await s3.completeMultipartUpload(params).promise();
+    const resp = await s3.send(command);
     // resp.Location is the object URL
-    return res.json({ location: resp.Location, key });
-  } catch (err) {
+    return res.json({
+      location: resp.Location,
+      key
+    });
+  }
+   catch (err) {
     console.error("completeMultipart error:", err);
     return res.status(500).json({ error: "Failed to complete multipart upload" });
   }
