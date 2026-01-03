@@ -1,6 +1,5 @@
 
 const reelPermissionRuleSchema = new mongoose.Schema({
-    
     minRating: Number,
     minProfileRank: Number,
     allowAffiliate: Boolean,

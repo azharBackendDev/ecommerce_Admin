@@ -27,8 +27,8 @@ const UserSchema = new Schema({
   role: { type: String, enum: ["customer", "seller", "admin"], default: "customer", index: true },
 
   fullName: String,
-  email: { type: String, index: true, sparse: true, unique: true }, // sparse for optional unique
-  phone: { type: String, index: true, sparse: true, unique: true }, // same for phone
+  email: { type: String,  sparse: true, unique: true }, // sparse for optional unique
+  phone: { type: String,  sparse: true, unique: true }, // same for phone
   whatsappnumber: String,
   profileImage: String,
 

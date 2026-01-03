@@ -88,7 +88,7 @@ export async function createOrder(req, res, next) {
     const shippingCost = 50; // TODO: Dynamic (e.g., based on pincode)
     const total = subTotal - discount + tax + shippingCost;
 
-    const orderNumber = `ORD-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${shortid.generate()}`;
+    const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${shortid.generate()}`;
 
     const order = await Order.create([{
       orderNumber,
@@ -112,8 +112,8 @@ export async function createOrder(req, res, next) {
       tax,
       shippingCost,
       total,
-      payment: { 
-        method: paymentMethod, 
+      payment: {
+        method: paymentMethod,
         status: "pending" // FIXED: Simplified – always pending on create; for non-COD, update post-gateway
         // TODO: For card/UPI, integrate gateway here and set "paid" if success
       },
@@ -126,22 +126,22 @@ export async function createOrder(req, res, next) {
 
     // FIXED: Populate with category (product.category ref populated for name/slug)
     const created = await Order.findById(order[0]._id)
-      .populate({ 
-        path: 'customer', 
-        select: 'name email phone addresses' 
+      .populate({
+        path: 'customer',
+        select: 'name email phone addresses'
       })
-      .populate({ 
-        path: 'items.product', 
+      .populate({
+        path: 'items.product',
         select: 'name slug images price brand category sku' // Added category & sku
       })
-      .populate({ 
-        path: 'items.product.category', 
+      .populate({
+        path: 'items.product.category',
         select: 'name slug' // Populates category details
       });
 
     return res.status(201).json({ success: true, order: created });
   } catch (err) {
-    await session.abortTransaction().catch(()=>{});
+    await session.abortTransaction().catch(() => { });
     session.endSession();
     return next(err);
   }

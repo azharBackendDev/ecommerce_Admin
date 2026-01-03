@@ -109,6 +109,11 @@ const OrderSchema = new Schema({
   // optional fields for audit
   placedAt: { type: Date, default: Date.now },
 
+  // for IVR call detection
+  ivrNextAt: { type: Date, default: null, index: true },   // next scheduled IVR time
+  ivrLatestCall: { type: Schema.Types.ObjectId, ref: 'IVRCall', default: null },
+  ivrCallDone: { type: Boolean, default: false }, // optional quick flag
+
   deliveredAt: Date,
   cancelledAt: Date
 }, { timestamps: true });

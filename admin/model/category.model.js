@@ -56,13 +56,13 @@ const CategorySchema = new Schema(
 );
 
 // indexes for queries
-CategorySchema.index({ parent: true });
-CategorySchema.index({ slug: true });
+CategorySchema.index({ parent: 1 });
+CategorySchema.index({ slug: 1 }, { unique: true });
 
 // auto-generate slug if not provided
-CategorySchema.pre("validate", function () {
+CategorySchema.pre("validate", function (next) {
   if (!this.slug && this.name) this.slug = slugify(this.name);
-  //  next()
+  next();
 });
 
 /**
@@ -110,4 +110,6 @@ CategorySchema.methods.getFullPath = async function () {
   }
   return path;
 };
+
 export const Category = mongoose.model("Category", CategorySchema);
+export default Category;

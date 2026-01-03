@@ -1,6 +1,6 @@
 
 const reelMediaSchema = new mongoose.Schema({
-    
+
     reelId: { type: mongoose.Schema.Types.ObjectId, ref: "Reel" },
     videoUrl: String,
     thumbnailUrl: String,
