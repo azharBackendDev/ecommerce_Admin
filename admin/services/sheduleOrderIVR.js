@@ -1,13 +1,16 @@
 // services/scheduleOrderIVR.js
 import mongoose from 'mongoose';
 import Order from '../model/order.model.js';
-import IVRCall from '../model/IVRCall.js';
+import IVRCall from '../model/ivr.model.js';
 import { addCallJob } from '../queues/callQueue.js';
 
 export async function scheduleOrderIVR(orderNumber, delayMs) {
+
+  console.log("startsheduleorderIVR..............");
+  
   if (!orderNumber && orderNumber !== 0) throw new Error('orderNumber is required');
   if (typeof delayMs !== 'number' || Number.isNaN(delayMs) || delayMs < 0) throw new Error('delayMs must be a non-negative number');
-
+  
   const order = await Order.findOne({ orderNumber });
   if (!order) throw new Error(`Order with orderNumber "${orderNumber}" not found`);
 
@@ -46,9 +49,15 @@ export async function scheduleOrderIVR(orderNumber, delayMs) {
     await session.commitTransaction();
     session.endSession();
 
+    
+    console.log("before add call job ");
+
     // Schedule queue job and get job id
     jobId = await addCallJob(ivrDoc._id.toString(), scheduledAt);
 
+
+    console.log("after add call job");
+    
     // You can store jobId in ivrDoc if you want:
     if (jobId) {
       ivrDoc.jobId = jobId;

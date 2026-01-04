@@ -16,7 +16,7 @@ import productRoutes from "./routes/product.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import userRoutes from "./routes/user.routes.js"
 
-
+import ivrRoutes from './routes/ivr.routes.js'
 
 //Appollo server for graphQL
 const server = new ApolloServer({
@@ -61,6 +61,8 @@ app.use("/api/products", productRoutes);
 
 // User routes 
 app.use("/api/users", userRoutes);
+
+app.use("/api/ivr", ivrRoutes)
 
 
 app.use((err, req, res, next) => {

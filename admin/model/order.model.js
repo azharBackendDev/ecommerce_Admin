@@ -23,11 +23,14 @@ const OrderItemSchema = new Schema({
     color: String,
     priceAdjustment: Number
   },
+
   lineTotal: { type: Number, required: true } // unitPrice * quantity (after discounts if any)
+
 }, { _id: false });
 
 
 
+// Address Schemaa
 const AddressSnapshotSchema = new Schema({
   fullName: String,
   phone: String,
@@ -40,7 +43,7 @@ const AddressSnapshotSchema = new Schema({
 }, { _id: false });
 
 
-
+// Payment info Schema
 const PaymentInfoSchema = new Schema({
   method: { type: String, enum: ["cod", "card", "wallet", "upi", "netbanking", "other"], default: "cod" },
   transactionId: String,
@@ -51,12 +54,14 @@ const PaymentInfoSchema = new Schema({
 
 
 const OrderSchema = new Schema({
+
   orderNumber: {
     type: String,
     required: true,
     unique: true,
     index: true
   }, // e.g. ORD-20251226-0001
+
   customer: {
     type: Schema.Types.ObjectId,
     ref: "User",
@@ -113,6 +118,8 @@ const OrderSchema = new Schema({
   ivrNextAt: { type: Date, default: null, index: true },   // next scheduled IVR time
   ivrLatestCall: { type: Schema.Types.ObjectId, ref: 'IVRCall', default: null },
   ivrCallDone: { type: Boolean, default: false }, // optional quick flag
+  callLogs: { type: [{ type: Schema.Types.Mixed }], default: [] },
+  exotelCallSid: { type: String },
 
   deliveredAt: Date,
   cancelledAt: Date

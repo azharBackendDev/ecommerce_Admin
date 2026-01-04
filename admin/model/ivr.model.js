@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 const { Schema, model } = mongoose;
 
 const IVRCallSchema = new Schema({
+
   order: { type: Schema.Types.ObjectId, ref: 'Order', required: false },
   orderNumber: { type: String },
   phone: { type: String, required: true, index: true },
@@ -33,7 +34,11 @@ const IVRCallSchema = new Schema({
 
   node: String,
   createdBy: { type: String },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  
+  callLogs: { type: [{ type: Schema.Types.Mixed }], default: [] },
+  jobId: { type: String },
+  attemptedAt: Date,
 
 }, { timestamps: true });
 

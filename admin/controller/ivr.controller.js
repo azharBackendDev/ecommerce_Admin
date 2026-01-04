@@ -1,10 +1,12 @@
 // controllers/ivrController.js
 import Order from '../model/order.model.js';
-import IVRCall from '../model/IVRCall.js';
+import IVRCall from '../model/ivr.model.js';
 import { scheduleOrderIVR } from '../services/sheduleOrderIVR.js';
 import { addCallJob, triggerNow } from '../queues/callQueue.js';
-import axios from 'axios';
-import { xml } from 'xmlbuilder2';
+
+import pkg from 'xmlbuilder2'
+const { create } = pkg;
+
 
 export async function scheduleIVRForOrder(req, res, next) {
   try {
@@ -19,6 +21,7 @@ export async function scheduleIVRForOrder(req, res, next) {
     return next(err);
   }
 }
+
 
 export async function cancelIVRForOrder(req, res, next) {
   try {
@@ -74,10 +77,10 @@ export async function manualTrigger(req, res, next) {
 
 /* ---------- Exotel start endpoint (returns XML) ---------- */
 export function exotelStart(req, res) {
-  const doc = xml({ version: '1.0' })
+  const doc = create({ version: '1.0' })
     .ele('Response')
-      .ele('Say', { language: 'hi-IN' }).txt('Namaskar. Aapne hamari website se order kiya hai. Order cancel ke liye 1 dabaiye. Order confirm ke liye 2 dabaiye.').up()
-      .ele('Gather', { action: `${process.env.BASE_URL.replace(/\/$/, '')}/exotel/ivr-response`, method: 'POST', numDigits: 1, timeout: 8 }).up()
+    .ele('Say', { language: 'hi-IN' }).txt('Namaskar. Aapne hamari website se order kiya hai. Order cancel ke liye 1 dabaiye. Order confirm ke liye 2 dabaiye.').up()
+    .ele('Gather', { action: `${process.env.BASE_URL.replace(/\/$/, '')}/exotel/ivr-response`, method: 'POST', numDigits: 1, timeout: 8 }).up()
     .up();
   res.type('text/xml').send(doc.end({ prettyPrint: true }));
 }
@@ -124,7 +127,10 @@ export async function exotelResponse(req, res, next) {
       await order.save();
     }
 
-    const resp = xml().ele('Response').ele('Say').txt('Dhanyavaad. Aapka response save kar liya gaya hai.').up().up();
+
+    const resp = create({ version: '1.0' }).ele('Response').ele('Say').txt('Dhanyavaad. Aapka response save kar liya gaya hai.').up().up();
+
+
     res.type('text/xml').send(resp.end({ prettyPrint: true }));
   } catch (err) {
     return next(err);

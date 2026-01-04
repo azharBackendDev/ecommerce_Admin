@@ -1,17 +1,75 @@
 // queues/callQueue.js
 import Queue from 'bull';
+import IORedis from 'ioredis';
 import axios from 'axios';
-import IVRCall from '../model/IVRCall.js';
-import Order from '../model/order.model.js';
+import IVRCall from '../model/ivr.model.js';
 
-const REDIS_URL = process.env.REDIS_URL;
-if (!REDIS_URL) throw new Error('REDIS_URL is not set in env');
+const { REDIS_URL } = process.env;
+if (!REDIS_URL) throw new Error('REDIS_URL is not set in env (use redis:// or rediss://)');
 
-export const callQueue = new Queue('callQueue', REDIS_URL);
+let urlHostname;
+try {
+  urlHostname = new URL(REDIS_URL).hostname;
+} catch (e) {
+  urlHostname = undefined;
+}
 
-/** returns job.id so caller can store it */
+const defaultRetryStrategy = (times) => Math.min(times * 50, 2000);
+
+// helper to create IORedis instance and set TLS servername when needed
+function makeIORedis(opts = {}) {
+  const finalOpts = { ...opts };
+  if (REDIS_URL.startsWith('rediss://')) {
+    finalOpts.tls = finalOpts.tls || {};
+    if (urlHostname) finalOpts.tls.servername = urlHostname;
+  }
+  return new IORedis(REDIS_URL, finalOpts);
+}
+
+// createClient for Bull: give different options per connection type
+export const callQueue = new Queue('callQueue', {
+  createClient(type) {
+    switch (type) {
+      case 'client':
+        // used by producers (adding jobs). Fail-fast so HTTP endpoints don't hang.
+        return makeIORedis({
+          maxRetriesPerRequest: 1,
+          enableOfflineQueue: false,
+          retryStrategy: defaultRetryStrategy
+        });
+      case 'subscriber':
+        // required by Bull: allow commands to wait; disable ready check
+        return makeIORedis({
+          maxRetriesPerRequest: null,
+          enableReadyCheck: false,
+          retryStrategy: defaultRetryStrategy
+        });
+      case 'bclient':
+        // blocking client for some commands
+        return makeIORedis({
+          maxRetriesPerRequest: null,
+          enableReadyCheck: false,
+          retryStrategy: defaultRetryStrategy
+        });
+      default:
+        return makeIORedis();
+    }
+  }
+});
+
+// logs for quick debugging
+callQueue.on('error', (err) => console.error('[callQueue] queue error', err && err.message));
+callQueue.on('waiting', (jobId) => console.debug('[callQueue] job waiting', jobId));
+callQueue.on('stalled', (job) => console.warn('[callQueue] job stalled', job.id));
+callQueue.on('active', (job) => console.debug('[callQueue] job active', job.id));
+callQueue.on('completed', (job) => console.debug('[callQueue] job completed', job.id));
+callQueue.on('failed', (job, err) => console.warn('[callQueue] job failed', job.id, err && err.message));
+
+// --- add job / triggerNow (unchanged logic) ---
 export async function addCallJob(ivrId, fireAt) {
+  console.log("start call job");
   const delay = Math.max(new Date(fireAt).getTime() - Date.now(), 0);
+  console.log("code run after delay");
   const job = await callQueue.add({ ivrId }, {
     delay,
     attempts: 4,
@@ -19,6 +77,7 @@ export async function addCallJob(ivrId, fireAt) {
     removeOnComplete: true,
     removeOnFail: false
   });
+  console.log("add job successfully in queue", job.id);
   return job.id;
 }
 
@@ -31,6 +90,7 @@ export async function triggerNow(ivrId) {
   return job.id;
 }
 
+// --- processor (unchanged logic) ---
 callQueue.process(5, async (job) => {
   const { ivrId } = job.data;
   if (!ivrId) throw new Error('No ivrId in job');
@@ -79,21 +139,29 @@ callQueue.process(5, async (job) => {
     await ivr.save();
 
     if (ivr.order) {
-      const order = await Order.findById(ivr.order._id);
-      if (order) {
-        order.exotelCallSid = callSid;
-        order.callLogs = order.callLogs || [];
-        order.callLogs.push({ event: 'call_triggered', time: new Date(), ivrId: ivr._id });
-        await order.save();
-      }
+      ivr.order.exotelCallSid = callSid;
+      ivr.order.callLogs = ivr.order.callLogs || [];
+      ivr.order.callLogs.push({ event: 'call_triggered', time: new Date(), ivrId: ivr._id });
+      await ivr.order.save();
     }
 
     return true;
   } catch (err) {
-    const message = err?.response ? `HTTP ${err.response.status}` : err.message;
+    // Better logging so we can see the full HTTP response body from Exotel
+    const status = err.response?.status;
+    const body = err.response?.data;
+    console.error('[callQueue] Exotel request failed', { status, body, message: err.message });
+
+    const message = status ? `HTTP ${status}` : err.message;
     ivr.status = 'error';
-    ivr.callLogs.push({ event: 'trigger_failed', time: new Date(), error: message, attempt: job.attemptsMade + 1 });
-    await ivr.save().catch(() => {});
+    ivr.callLogs.push({
+      event: 'trigger_failed',
+      time: new Date(),
+      error: message,
+      httpBody: body,        // save full response body to DB for later inspection
+      attempt: job.attemptsMade + 1
+    });
+    await ivr.save().catch(() => { });
     throw err;
   }
 });
