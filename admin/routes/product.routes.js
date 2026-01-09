@@ -3,8 +3,7 @@ import { createProduct, getProducts, getProductById, updateProduct, deleteProduc
 import multerHandler from "../middlewares/multerHandler.js";
 import { presignBatch } from "../utils/presignedUrl.js";
 import { completeMultipart } from "../controller/multipart.controller.js";
-import { createOrder } from "../controller/order.controller.js";
-import { registerUser } from "../controller/user-controller.js";
+
 
 const router = Router();
 
@@ -52,10 +51,6 @@ router.patch("/updateSingleProduct/:id", updateProduct);
 router.delete("/deleteSingleProduct/:id", deleteProduct);
 
 
-// ===================================================
-// POST /api/products/orders - Create Order : Buy
-// ===================================================
-router.post('/orders', createOrder);
 
 
 

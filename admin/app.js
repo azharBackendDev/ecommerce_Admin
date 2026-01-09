@@ -15,8 +15,8 @@ import adminAuthRoutes from './routes/auth.routes.js'
 import productRoutes from "./routes/product.routes.js";
 import categoryRoutes from "./routes/category.routes.js";
 import userRoutes from "./routes/user.routes.js"
-
 import ivrRoutes from './routes/ivr.routes.js'
+import orderRouter from './routes/order.routes.js'
 
 //Appollo server for graphQL
 const server = new ApolloServer({
@@ -47,10 +47,16 @@ if (process.env.NODE_ENV !== "test") {
   app.use(morgan("dev"));
 }
 
+// ===================================================
+// Admin auth routes
+// ===================================================
+app.use('/api/auth/admins', adminAuthRoutes);// Admin login middleware
+
+
+// ===================================================
+// Category routes
+// ===================================================
 app.use("/api/categories", categoryRoutes);
-app.use('/api/auth/admins',adminAuthRoutes);// Admin login middleware
-
-
 
 
 // ===================================================
@@ -59,9 +65,20 @@ app.use('/api/auth/admins',adminAuthRoutes);// Admin login middleware
 app.use("/api/products", productRoutes);
 
 
-// User routes 
+// ===================================================
+// create order/Buy with razorpay payment
+// ===================================================
+app.use('/api/products', orderRouter)
+
+
+// ===================================================
+// Register user routes 
+// ===================================================
 app.use("/api/users", userRoutes);
 
+// ===================================================
+// IVR system Routes
+// ===================================================
 app.use("/api/ivr", ivrRoutes)
 
 
